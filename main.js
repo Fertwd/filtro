@@ -4,168 +4,230 @@ const canvasCtx = canvasElement.getContext('2d');
 
 const startScreen = document.getElementById('start-screen');
 const startBtn = document.getElementById('start-btn');
-const activeControls = document.getElementById('active-controls');
+const cameraControls = document.getElementById('camera-controls');
 const captureBtn = document.getElementById('capture-btn');
+const flashOverlay = document.getElementById('flash-overlay');
 
-let faceMesh;
-let camera;
+const previewScreen = document.getElementById('preview-screen');
+const previewImage = document.getElementById('preview-image');
+const retakeBtn = document.getElementById('retake-btn');
+const saveBtn = document.getElementById('save-btn');
+
 let hatImage = new Image();
 let logoImage = new Image();
-let isSystemReady = false;
 let particles = [];
+let videoWidth = 0;
+let videoHeight = 0;
+let currentPhotoDataUrl = null;
 
-function initApp() {
-    document.getElementById('event-title').innerText = APP_CONFIG.evento.titulo;
+function init() {
     document.getElementById('event-name').innerText = APP_CONFIG.evento.nombreFestejado;
-    document.getElementById('start-btn').innerText = APP_CONFIG.ui.textoBoton;
-    document.getElementById('watermark-text').innerText = APP_CONFIG.ui.marcaAgua;
-    
+
     hatImage.src = APP_CONFIG.assets.gorrito;
     logoImage.src = APP_CONFIG.assets.logo;
-    
-    if (APP_CONFIG.ui.habilitarParticulas) {
-        createParticles();
-    }
-}
 
-function createParticles() {
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 30; i++) {
         particles.push({
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight,
-            size: Math.random() * 3 + 1,
-            speedY: Math.random() * 1 + 0.5,
-            opacity: Math.random() * 0.5 + 0.2,
-            angle: Math.random() * 360
+            x: Math.random(),
+            y: Math.random(),
+            size: Math.random() * 2 + 1,
+            speed: Math.random() * 0.005 + 0.002,
+            alpha: Math.random() * 0.5 + 0.3
         });
     }
 }
 
-function drawParticles(ctx, width, height) {
-    ctx.save();
+function resizeCanvas() {
+    canvasElement.width = window.innerWidth;
+    canvasElement.height = window.innerHeight;
+}
+
+function drawParticles() {
     particles.forEach(p => {
-        ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-        
-        p.y += p.speedY;
-        if (p.y > height) {
-            p.y = -10;
-            p.x = Math.random() * width;
+        canvasCtx.fillStyle = `rgba(255,255,255,${p.alpha})`;
+        canvasCtx.beginPath();
+        canvasCtx.arc(
+            p.x * canvasElement.width,
+            p.y * canvasElement.height,
+            p.size,
+            0,
+            Math.PI * 2
+        );
+        canvasCtx.fill();
+
+        p.y += p.speed;
+        if (p.y > 1) {
+            p.y = 0;
+            p.x = Math.random();
         }
     });
-    ctx.restore();
+}
+
+/* 🔥 CONVERSIÓN CORRECTA DE COORDENADAS */
+function convertX(x) {
+    return (1 - x) * videoWidth;
+}
+
+function convertY(y) {
+    return y * videoHeight;
 }
 
 function onResults(results) {
-    if (canvasElement.width !== window.innerWidth || canvasElement.height !== window.innerHeight) {
-        canvasElement.width = window.innerWidth;
-        canvasElement.height = window.innerHeight;
-    }
-
+    resizeCanvas();
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    
+
+    if (!results.image) return;
+
+    videoWidth = results.image.width;
+    videoHeight = results.image.height;
+
+    const scale = Math.max(
+        canvasElement.width / videoWidth,
+        canvasElement.height / videoHeight
+    );
+
+    const drawWidth = videoWidth * scale;
+    const drawHeight = videoHeight * scale;
+    const offsetX = (canvasElement.width - drawWidth) / 2;
+    const offsetY = (canvasElement.height - drawHeight) / 2;
+
+    // 🎥 VIDEO
     canvasCtx.save();
     canvasCtx.translate(canvasElement.width, 0);
     canvasCtx.scale(-1, 1);
-    canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+    canvasCtx.drawImage(
+        results.image,
+        offsetX,
+        offsetY,
+        drawWidth,
+        drawHeight
+    );
+
     canvasCtx.restore();
 
-    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+    // 🎩 FACE FILTER
+    if (results.multiFaceLandmarks) {
         results.multiFaceLandmarks.forEach(landmarks => {
+
             const topHead = landmarks[10];
-            const chin = landmarks[152];
-            const leftTarget = landmarks[234];
-            const rightTarget = landmarks[454];
+            const leftEar = landmarks[234];
+            const rightEar = landmarks[454];
 
-            const scaleX = canvasElement.width;
-            const scaleY = canvasElement.height;
+            // 🔥 COORDENADAS BIEN A ESCALA REAL
+            const lx = convertX(leftEar.x) * (drawWidth / videoWidth) + offsetX;
+            const rx = convertX(rightEar.x) * (drawWidth / videoWidth) + offsetX;
 
-            const headWidth = Math.hypot(
-                (rightTarget.x - leftTarget.x) * scaleX,
-                (rightTarget.y - leftTarget.y) * scaleY
-            );
+            const ly = convertY(leftEar.y) * (drawHeight / videoHeight) + offsetY;
+            const ry = convertY(rightEar.y) * (drawHeight / videoHeight) + offsetY;
 
-            const hatWidth = headWidth * 1.6;
+            const cx = convertX(topHead.x) * (drawWidth / videoWidth) + offsetX;
+            const cy = convertY(topHead.y) * (drawHeight / videoHeight) + offsetY;
+
+            const headWidth = Math.hypot(rx - lx, ry - ly);
+
+            const hatWidth = headWidth * 1.4;
             const hatHeight = hatWidth * (hatImage.height / hatImage.width);
 
-            const angle = Math.atan2(
-                (rightTarget.y - leftTarget.y) * scaleY,
-                (rightTarget.x - leftTarget.x) * scaleX
-            );
+            const angle = Math.atan2(ry - ly, rx - lx);
 
-            const centerX = topHead.x * scaleX;
-            const centerY = topHead.y * scaleY;
+            // 🔥 POSICIÓN SEGURA (NO SE SALE)
+            const verticalOffset = hatHeight * 0.6;
 
             canvasCtx.save();
-            canvasCtx.translate(centerX, centerY);
+            canvasCtx.translate(cx, cy - verticalOffset);
             canvasCtx.rotate(-angle);
-            
+
             canvasCtx.drawImage(
                 hatImage,
                 -hatWidth / 2,
-                -hatHeight + (hatHeight * 0.15),
+                -hatHeight,
                 hatWidth,
                 hatHeight
             );
+
             canvasCtx.restore();
         });
     }
 
-    if (APP_CONFIG.ui.habilitarParticulas) {
-        drawParticles(canvasCtx, canvasElement.width, canvasElement.height);
-    }
+    drawParticles();
 }
 
 async function startCamera() {
     startScreen.classList.add('hidden');
-    activeControls.classList.remove('hidden');
+    cameraControls.classList.remove('hidden');
 
-    faceMesh = new FaceMesh({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+    const faceMesh = new FaceMesh({
+        locateFile: (file) =>
+            `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
     });
 
     faceMesh.setOptions({
         maxNumFaces: 4,
         refineLandmarks: false,
-        minDetectionConfidence: 0.6,
-        minTrackingConfidence: 0.6
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
     });
 
     faceMesh.onResults(onResults);
 
-    camera = new Camera(videoElement, {
+    const camera = new Camera(videoElement, {
         onFrame: async () => {
             await faceMesh.send({ image: videoElement });
         },
-        width: 720,
-        height: 1280
+        width: 1280,
+        height: 720,
+        facingMode: "user"
     });
 
     await camera.start();
 }
 
 function capturePhoto() {
-    canvasCtx.save();
-    canvasCtx.drawImage(logoImage, 25, 25, 120, 120 * (logoImage.height / logoImage.width));
-    
-    canvasCtx.fillStyle = "rgba(255, 255, 255, 0.7)";
-    canvasCtx.font = "bold 14px 'Poppins', sans-serif";
-    canvasCtx.letterSpacing = "2px";
-    canvasCtx.fillText(APP_CONFIG.evento.nombreFestejado, 25, canvasElement.height - 30);
-    canvasCtx.restore();
+    flashOverlay.classList.add('flash-active');
+    setTimeout(() => flashOverlay.classList.remove('flash-active'), 150);
 
-    const dataUrl = canvasElement.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.download = `${APP_CONFIG.evento.nombreFestejado.replace(/\s+/g, '_')}_photobooth.png`;
-    link.href = dataUrl;
-    link.click();
+    canvasCtx.drawImage(
+        logoImage,
+        (canvasElement.width - 100) / 2,
+        20,
+        100,
+        100
+    );
+
+    canvasCtx.fillStyle = "#fff";
+    canvasCtx.font = "800 18px Poppins";
+    canvasCtx.textAlign = "center";
+
+    canvasCtx.fillText(
+        `✨ ${APP_CONFIG.evento.nombreFestejado} ✨`,
+        canvasElement.width / 2,
+        canvasElement.height - 40
+    );
+
+    currentPhotoDataUrl = canvasElement.toDataURL("image/jpeg", 0.95);
+
+    previewImage.src = currentPhotoDataUrl;
+    cameraControls.classList.add('hidden');
+    previewScreen.classList.remove('hidden');
 }
+
+retakeBtn.addEventListener('click', () => {
+    previewScreen.classList.add('hidden');
+    cameraControls.classList.remove('hidden');
+});
+
+saveBtn.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = `EclipseMotion_${Date.now()}.jpg`;
+    link.href = currentPhotoDataUrl;
+    link.click();
+
+    previewScreen.classList.add('hidden');
+    cameraControls.classList.remove('hidden');
+});
 
 startBtn.addEventListener('click', startCamera);
 captureBtn.addEventListener('click', capturePhoto);
 
-window.addEventListener('DOMContentLoaded', initApp);
+window.addEventListener('DOMContentLoaded', init);
