@@ -1,0 +1,205 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #050505;
+    font-family: 'Poppins', sans-serif;
+    color: #ffffff;
+}
+
+#app-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    background: radial-gradient(circle at center, #111115 0%, #050505 100%);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+}
+
+#output-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+}
+
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 25px;
+    pointer-events: none;
+}
+
+#ui-layer * {
+    pointer-events: auto;
+}
+
+.branding-header {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 10px;
+    animation: fadeInDown 0.8s ease-out;
+}
+
+#brand-logo {
+    height: 55px;
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.3));
+}
+
+#start-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    background: linear-gradient(to bottom, rgba(5, 5, 5, 0.7), rgba(10, 10, 15, 0.95));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 3;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    text-align: center;
+}
+
+#start-screen.hidden {
+    opacity: 0;
+    transform: scale(1.05);
+    pointer-events: none;
+}
+
+#event-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    color: #8a8a93;
+    margin-bottom: 12px;
+    font-weight: 400;
+}
+
+#event-name {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #ffffff 30%, #a5a5b0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 40px;
+    text-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+}
+
+.glow-button {
+    background: #ffffff;
+    color: #000000;
+    border: none;
+    padding: 16px 36px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.glow-button:active {
+    transform: scale(0.96);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+#active-controls {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    margin-top: auto;
+    transition: opacity 0.4s ease;
+}
+
+#active-controls.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.capture-button {
+    width: 76px;
+    height: 76px;
+    background: rgba(255, 255, 255, 0.25);
+    border: 4px solid #ffffff;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s;
+}
+
+.capture-button::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    bottom: 4px;
+    background: #ffffff;
+    border-radius: 50%;
+    transition: transform 0.15s;
+}
+
+.capture-button:active::after {
+    transform: scale(0.85);
+}
+
+.watermark {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    animation: pulse 2s infinite ease-in-out;
+}
+
+#fx-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+}

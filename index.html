@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Eclipse Motion - Photobooth Virtual</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="./img/logo.png">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- MediaPipe Face Mesh & Camera Utils -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <!-- Contenedor principal de la cámara -->
+    <div id="app-container">
+        <!-- Capa 1: Video en vivo (oculto visualmente, la cámara cruda) -->
+        <video id="input-video" autoplay playsinline style="display: none;"></video>
+        
+        <!-- Capa 2: Canvas donde se dibuja el video y el filtro en tiempo real -->
+        <canvas id="output-canvas"></canvas>
+
+        <!-- Capa 3: Interfaz de Usuario (UI) -->
+        <div id="ui-layer">
+            <!-- Branding Superior -->
+            <header class="branding-header">
+                <img src="./img/logo.png" alt="Eclipse Motion" id="brand-logo">
+            </header>
+
+            <!-- Pantalla de Inicio -->
+            <div id="start-screen">
+                <h1 id="event-title">SISTEMA DE PHOTOBOOTH VIRTUAL</h1>
+                <h2 id="event-name">MARCOS 7</h2>
+                <button id="start-btn" class="glow-button">ACTIVAR CÁMARA</button>
+            </div>
+
+            <!-- Controles activos (ocultos hasta iniciar cámara) -->
+            <div id="active-controls" class="hidden">
+                <button id="capture-btn" class="capture-button"></button>
+                <div id="watermark-text" class="watermark">✨ MODO XV AÑOS/CUMPLEAÑOS ✨</div>
+            </div>
+        </div>
+        
+        <!-- Capa 4: Efectos visuales decorativos -->
+        <div id="fx-layer"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
